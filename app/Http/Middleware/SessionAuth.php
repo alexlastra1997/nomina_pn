@@ -10,8 +10,9 @@ class SessionAuth
     public function handle(Request $request, Closure $next)
     {
         if (!$request->session()->get('auth_ok')) {
-            return redirect()->route('auth.loginForm')->with('error', 'Debe iniciar sesión.');
+            return redirect()->route('auth.loginForm')->with('error', 'Debes iniciar sesión.');
         }
+
         return $next($request);
     }
 }

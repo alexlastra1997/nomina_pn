@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -26,13 +27,20 @@ class AuthController extends Controller
             'password' => ['required','string','min:8','confirmed'],
         ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
+        // Transacción para asegurar consistencia
+        $user = DB::transaction(function () use ($data) {
+            return User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+            ]);
+        });
 
-        // Auto login después de registrar (opcional)
+        if (!$user) {
+            return back()->with('error', 'No se pudo crear el usuario. Revisa el log.')->withInput();
+        }
+
+        // Auto login
         $request->session()->regenerate();
         $request->session()->put('auth_ok', true);
         $request->session()->put('auth_user_id', $user->id);

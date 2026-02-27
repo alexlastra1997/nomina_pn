@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Formulario;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class PublicFormularioController extends Controller
@@ -160,6 +161,113 @@ class PublicFormularioController extends Controller
         ]);
     }
 
+    /**
+     * Validación matemática de cédula ecuatoriana (personas naturales)
+     */
+    private function cedulaEcuadorValida(string $cedula): bool
+    {
+        if (!preg_match('/^\d{10}$/', $cedula)) return false;
+
+        $provincia = (int) substr($cedula, 0, 2);
+        $tercer = (int) $cedula[2];
+
+        if ($provincia < 1 || $provincia > 24) return false;
+        if ($tercer < 0 || $tercer > 5) return false;
+
+        $digitos = array_map('intval', str_split($cedula));
+        $suma = 0;
+
+        for ($i = 0; $i < 9; $i++) {
+            $v = $digitos[$i];
+            if ($i % 2 === 0) {
+                $v *= 2;
+                if ($v > 9) $v -= 9;
+            }
+            $suma += $v;
+        }
+
+        $verificador = (10 - ($suma % 10)) % 10;
+        return $verificador === $digitos[9];
+    }
+
+    /**
+     * AJAX: Busca en BD nomina -> tabla servidores por cédula
+     * Devuelve apellido_paterno, apellido_materno, nombres
+     */
+    public function lookupCedula(string $cedula)
+{
+    try {
+        $cedula = preg_replace('/\D+/', '', $cedula);
+
+        if (strlen($cedula) !== 10) {
+            return response()->json([
+                'ok' => false,
+                'type' => 'invalid',
+                'message' => 'La cédula debe tener 10 dígitos'
+            ], 422);
+        }
+
+        if (!$this->cedulaEcuadorValida($cedula)) {
+            return response()->json([
+                'ok' => false,
+                'type' => 'invalid',
+                'message' => 'Cédula inválida'
+            ], 422);
+        }
+
+        // ✅ Probar conexión antes (si falla, sabrás que es BD)
+        DB::connection('nomina')->getPdo();
+
+        // ✅ Consulta a nomina.servidores
+        $s = DB::connection('nomina')
+            ->table('servidors')
+            ->select(['cedula', 'apellidos', 'nombres'])
+            ->whereRaw("REPLACE(TRIM(cedula),' ','') = ?", [$cedula])
+            ->first();
+
+        if (!$s) {
+            return response()->json([
+                'ok' => false,
+                'type' => 'not_found',
+                'message' => 'No encontrado en nómina'
+            ], 404);
+        }
+
+        $apellidos = trim(preg_replace('/\s+/', ' ', (string)($s->apellidos ?? '')));
+        $nombres   = trim(preg_replace('/\s+/', ' ', (string)($s->nombres ?? '')));
+
+        $parts = $apellidos === '' ? [] : explode(' ', $apellidos);
+
+        if (count($parts) >= 2) {
+            $apellidoMaterno = array_pop($parts);
+            $apellidoPaterno = implode(' ', $parts);
+        } else {
+            $apellidoPaterno = $parts[0] ?? '';
+            $apellidoMaterno = '';
+        }
+
+        return response()->json([
+            'ok' => true,
+            'data' => [
+                'cedula' => $cedula,
+                'apellido_paterno' => $apellidoPaterno,
+                'apellido_materno' => $apellidoMaterno,
+                'nombres' => $nombres,
+            ]
+        ]);
+
+    } catch (\Throwable $e) {
+        // ✅ Te devuelve el error real en JSON para depurar (solo mientras pruebas)
+        return response()->json([
+            'ok' => false,
+            'type' => 'server_error',
+            'message' => 'Error interno: ' . $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ], 500);
+    }
+}
+
     public function store(Request $request)
     {
         $bancos = $this->bancos();
@@ -178,18 +286,18 @@ class PublicFormularioController extends Controller
             'tipo_cuenta' => ['required', Rule::in(['AHORROS','CORRIENTE'])],
             'cuenta' => ['required','string','max:30'],
 
-            'escuela' => ['required','integer', Rule::in([1,2,3,4,5])],
+            // Si ya cambiaste escuelas a texto, cambia esta validación
+            'escuela' => ['required'], // ✅ deja así para no romper por tipos
+
             'celular' => ['required','digits:10'],
         ]);
 
-        // Guardar en mayúsculas (solo campos de texto)
         $data['apellido_paterno'] = Str::upper(trim($data['apellido_paterno']));
         $data['apellido_materno'] = Str::upper(trim($data['apellido_materno']));
         $data['nombres'] = Str::upper(trim($data['nombres']));
         $data['estado_civil'] = Str::upper(trim($data['estado_civil']));
         $data['tipo_cuenta'] = Str::upper(trim($data['tipo_cuenta']));
-        $data['cuenta'] = Str::upper(trim($data['cuenta'])); // si trae letras, igual queda
-        // cedula/celular son números, se quedan igual
+        $data['cuenta'] = Str::upper(trim($data['cuenta']));
 
         $data['banco_nombre'] = Str::upper($bancos[(int)$data['banco_id']]);
 

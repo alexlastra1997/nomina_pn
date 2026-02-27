@@ -9,25 +9,25 @@
 
         <div>
             <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Nombre</label>
-            <input name="name" value="{{ old('name') }}"
+            <input name="name" value="{{ old('name') }}" required
                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
         </div>
 
         <div>
             <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-            <input type="email" name="email" value="{{ old('email') }}"
+            <input type="email" name="email" value="{{ old('email') }}" required
                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
         </div>
 
         <div>
             <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-            <input type="password" name="password"
+            <input type="password" name="password" required
                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
         </div>
 
         <div>
             <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Confirmar password</label>
-            <input type="password" name="password_confirmation"
+            <input type="password" name="password_confirmation" required
                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
         </div>
 
