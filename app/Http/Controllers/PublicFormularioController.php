@@ -216,11 +216,11 @@ class PublicFormularioController extends Controller
         }
 
         // ✅ Probar conexión antes (si falla, sabrás que es BD)
-        DB::connection('nomina')->getPdo();
+        DB::connection('nomina_pn')->getPdo();
 
         // ✅ Consulta a nomina.servidores
-        $s = DB::connection('nomina')
-            ->table('servidors')
+        $s = DB::connection('nomina_pn')
+            ->table('servidores')
             ->select(['cedula', 'apellidos', 'nombres'])
             ->whereRaw("REPLACE(TRIM(cedula),' ','') = ?", [$cedula])
             ->first();

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('servidors', function (Blueprint $table) {
+        Schema::create('servidores', function (Blueprint $table) {
             $table->id();
             $table->string('cedula', 10)->unique();
             $table->string('apellidos', 200);
@@ -20,6 +20,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('servidors');
+        Schema::dropIfExists('servidores');
     }
 };
