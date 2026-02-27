@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Str;
 
+
 return [
 
     /*
@@ -113,7 +114,7 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
-        'nomina' => [
+       'nomina' => [
     'driver' => 'mysql',
     'host' => env('DB_NOMINA_HOST', '127.0.0.1'),
     'port' => env('DB_NOMINA_PORT', '3306'),
@@ -127,7 +128,6 @@ return [
     'prefix_indexes' => true,
     'strict' => true,
     'engine' => null,
-    
 ],
 
     ],
