@@ -194,7 +194,7 @@ class PublicFormularioController extends Controller
      * AJAX: Busca en BD nomina -> tabla servidores por cédula
      * Devuelve apellido_paterno, apellido_materno, nombres
      */
-    public function lookupCedula(string $cedula)
+public function lookupCedula(string $cedula)
 {
     try {
         $cedula = preg_replace('/\D+/', '', $cedula);
@@ -215,14 +215,11 @@ class PublicFormularioController extends Controller
             ], 422);
         }
 
-        // ✅ Probar conexión antes (si falla, sabrás que es BD)
-        DB::connection('nomina_pn')->getPdo();
-
-        // ✅ Consulta a nomina.servidores
-        $s = DB::connection('nomina_pn')
-            ->table('servidores')
+        // ✅ Usa la conexión por defecto (DB_CONNECTION=mysql).
+        // Si tu .env apunta a nomina_pn, aquí ya estás consultando nomina_pn.
+        $s = DB::table('servidores')
             ->select(['cedula', 'apellidos', 'nombres'])
-            ->whereRaw("REPLACE(TRIM(cedula),' ','') = ?", [$cedula])
+            ->where('cedula', $cedula)
             ->first();
 
         if (!$s) {
@@ -257,13 +254,11 @@ class PublicFormularioController extends Controller
         ]);
 
     } catch (\Throwable $e) {
-        // ✅ Te devuelve el error real en JSON para depurar (solo mientras pruebas)
+        // ✅ En producción es mejor NO exponer file/line
         return response()->json([
             'ok' => false,
             'type' => 'server_error',
-            'message' => 'Error interno: ' . $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
+            'message' => 'Error interno'
         ], 500);
     }
 }

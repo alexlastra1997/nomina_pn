@@ -114,11 +114,11 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
-       'nomina' => [
+        'nomina' => [
     'driver' => 'mysql',
     'host' => env('DB_NOMINA_HOST', '127.0.0.1'),
     'port' => env('DB_NOMINA_PORT', '3306'),
-    'database' => env('DB_NOMINA_DATABASE', 'nomina'),
+    'database' => env('DB_NOMINA_DATABASE', 'nomina_pn'),
     'username' => env('DB_NOMINA_USERNAME', 'root'),
     'password' => env('DB_NOMINA_PASSWORD', ''),
     'unix_socket' => env('DB_NOMINA_SOCKET', ''),
@@ -128,6 +128,9 @@ return [
     'prefix_indexes' => true,
     'strict' => true,
     'engine' => null,
+    'options' => extension_loaded('pdo_mysql') ? array_filter([
+    PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA') ?: null,
+]) : [],
 ],
 
     ],
