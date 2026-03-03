@@ -153,17 +153,36 @@ class PublicFormularioController extends Controller
         ];
     }
 
+    private function escuelas(): array
+    {
+        return [
+            'ESP. Escuela Superior de Policia "Gral. Alberto Henriquez Gallo"',
+            'EFP. Sgop. José Emilio Castillo Solís (Tambillo)',
+            'EFP. Chambo',
+            'EFP. Sbos. Gerardo Ramos Basantes (San Miguel)',
+            'EFP. Cbos. Froilán Jiménez Granda (Cuenca)',
+            'EFP. Unidad de Equitación y Remonta',
+            'EFP. Cbos. José Luis Mejía Solórzano (Gustavo Noboa)',
+            'EFP. Cbos. Fermín Eulogio Álava Álava - Chone',
+            'EFP. Santo Domingo',
+            'EFP. Cbos.. Fabián Alberto Armijos Jiménez (Atahualpa)',
+            'EFP. Cbos. José Lizandro Herrera Calderón (Fumisa)',
+            'EFP. Cbos. Víctor Hugo Usca Pachacama (Chimbo)',
+            'EFP. Catamayo',
+            'EFP. UPMA',
+            'EFP. San Diego',
+        ];
+    }
+
     public function create()
     {
         return view('public.form', [
             'bancos' => $this->bancos(),
             'estados' => $this->estadosCiviles(),
+            'escuelas' => $this->escuelas(),
         ]);
     }
 
-    /**
-     * Validación matemática de cédula ecuatoriana (personas naturales)
-     */
     private function cedulaEcuadorValida(string $cedula): bool
     {
         if (!preg_match('/^\d{10}$/', $cedula)) return false;
@@ -190,83 +209,88 @@ class PublicFormularioController extends Controller
         return $verificador === $digitos[9];
     }
 
-    /**
-     * AJAX: Busca en BD nomina -> tabla servidores por cédula
-     * Devuelve apellido_paterno, apellido_materno, nombres
-     */
-public function lookupCedula(string $cedula)
-{
-    try {
-        $cedula = preg_replace('/\D+/', '', $cedula);
+    public function lookupCedula(string $cedula)
+    {
+        try {
+            $cedula = preg_replace('/\D+/', '', $cedula);
 
-        if (strlen($cedula) !== 10) {
+            if (strlen($cedula) !== 10) {
+                return response()->json([
+                    'ok' => false,
+                    'type' => 'invalid',
+                    'message' => 'La cédula debe tener 10 dígitos'
+                ], 422);
+            }
+
+            if (!$this->cedulaEcuadorValida($cedula)) {
+                return response()->json([
+                    'ok' => false,
+                    'type' => 'invalid',
+                    'message' => 'Cédula inválida'
+                ], 422);
+            }
+
+            // ✅ Si ya llenó el formulario, bloquear
+            $yaExiste = Formulario::where('cedula', $cedula)->exists();
+            if ($yaExiste) {
+                return response()->json([
+                    'ok' => false,
+                    'type' => 'already_submitted',
+                    'message' => 'Esta cédula ya registró el formulario. No puede volver a enviarlo.'
+                ], 409);
+            }
+
+            // ✅ Consulta nómina
+            $s = DB::table('servidores')
+                ->select(['cedula', 'apellidos', 'nombres'])
+                ->where('cedula', $cedula)
+                ->first();
+
+            if (!$s) {
+                return response()->json([
+                    'ok' => false,
+                    'type' => 'not_found',
+                    'message' => 'No encontrado en nómina'
+                ], 404);
+            }
+
+            $apellidos = trim(preg_replace('/\s+/', ' ', (string)($s->apellidos ?? '')));
+            $nombres   = trim(preg_replace('/\s+/', ' ', (string)($s->nombres ?? '')));
+
+            $parts = $apellidos === '' ? [] : explode(' ', $apellidos);
+
+            if (count($parts) >= 2) {
+                $apellidoMaterno = array_pop($parts);
+                $apellidoPaterno = implode(' ', $parts);
+            } else {
+                $apellidoPaterno = $parts[0] ?? '';
+                $apellidoMaterno = '';
+            }
+
+            return response()->json([
+                'ok' => true,
+                'data' => [
+                    'cedula' => $cedula,
+                    'apellido_paterno' => $apellidoPaterno,
+                    'apellido_materno' => $apellidoMaterno,
+                    'nombres' => $nombres,
+                ]
+            ]);
+
+        } catch (\Throwable $e) {
             return response()->json([
                 'ok' => false,
-                'type' => 'invalid',
-                'message' => 'La cédula debe tener 10 dígitos'
-            ], 422);
+                'type' => 'server_error',
+                'message' => 'Error interno'
+            ], 500);
         }
-
-        if (!$this->cedulaEcuadorValida($cedula)) {
-            return response()->json([
-                'ok' => false,
-                'type' => 'invalid',
-                'message' => 'Cédula inválida'
-            ], 422);
-        }
-
-        // ✅ Usa la conexión por defecto (DB_CONNECTION=mysql).
-        // Si tu .env apunta a nomina_pn, aquí ya estás consultando nomina_pn.
-        $s = DB::table('servidores')
-            ->select(['cedula', 'apellidos', 'nombres'])
-            ->where('cedula', $cedula)
-            ->first();
-
-        if (!$s) {
-            return response()->json([
-                'ok' => false,
-                'type' => 'not_found',
-                'message' => 'No encontrado en nómina'
-            ], 404);
-        }
-
-        $apellidos = trim(preg_replace('/\s+/', ' ', (string)($s->apellidos ?? '')));
-        $nombres   = trim(preg_replace('/\s+/', ' ', (string)($s->nombres ?? '')));
-
-        $parts = $apellidos === '' ? [] : explode(' ', $apellidos);
-
-        if (count($parts) >= 2) {
-            $apellidoMaterno = array_pop($parts);
-            $apellidoPaterno = implode(' ', $parts);
-        } else {
-            $apellidoPaterno = $parts[0] ?? '';
-            $apellidoMaterno = '';
-        }
-
-        return response()->json([
-            'ok' => true,
-            'data' => [
-                'cedula' => $cedula,
-                'apellido_paterno' => $apellidoPaterno,
-                'apellido_materno' => $apellidoMaterno,
-                'nombres' => $nombres,
-            ]
-        ]);
-
-    } catch (\Throwable $e) {
-        // ✅ En producción es mejor NO exponer file/line
-        return response()->json([
-            'ok' => false,
-            'type' => 'server_error',
-            'message' => 'Error interno'
-        ], 500);
     }
-}
 
     public function store(Request $request)
     {
         $bancos = $this->bancos();
         $estados = $this->estadosCiviles();
+        $escuelas = $this->escuelas();
 
         $data = $request->validate([
             'cedula' => ['required','digits:10','unique:formularios,cedula'],
@@ -281,8 +305,7 @@ public function lookupCedula(string $cedula)
             'tipo_cuenta' => ['required', Rule::in(['AHORROS','CORRIENTE'])],
             'cuenta' => ['required','string','max:30'],
 
-            // Si ya cambiaste escuelas a texto, cambia esta validación
-            'escuela' => ['required'], // ✅ deja así para no romper por tipos
+            'escuela' => ['required','string','max:200'],
 
             'celular' => ['required','digits:10'],
         ]);
@@ -293,6 +316,7 @@ public function lookupCedula(string $cedula)
         $data['estado_civil'] = Str::upper(trim($data['estado_civil']));
         $data['tipo_cuenta'] = Str::upper(trim($data['tipo_cuenta']));
         $data['cuenta'] = Str::upper(trim($data['cuenta']));
+        $data['escuela'] = Str::upper(trim($data['escuela']));
 
         $data['banco_nombre'] = Str::upper($bancos[(int)$data['banco_id']]);
 
