@@ -8,7 +8,7 @@
 
 <div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
 
-    <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Formulario Público</h1>
+    <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Formulario Nómina</h1>
 
     {{-- Mensajes --}}
     @if(session('success'))

@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-    <div class="flex items-center justify-between gap-3 mb-4">
+    <div class="flex items-center justify-between gap-4 mb-4">
         <h1 class="text-xl font-bold text-gray-900 dark:text-white">Registros</h1>
 
         <form method="GET" class="flex gap-2">
@@ -11,7 +11,12 @@
                    placeholder="Buscar cédula o nombre...">
             <button class="px-4 py-2 rounded-lg bg-blue-600 text-white">Buscar</button>
         </form>
+        
     </div>
+    <a href="{{ route('admin.form.export') }}"
+        class="bg-green-600 hover:bg-green-700 text-white text-xs px-4 py-2 rounded-lg shadow">
+            Descargar Base
+        </a>
 
     <div class="relative overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-700 dark:text-gray-200">

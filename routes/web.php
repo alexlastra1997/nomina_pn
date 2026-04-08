@@ -42,4 +42,7 @@ Route::middleware('sessionauth')->group(function () {
 
     Route::get('/servidores/importar', [ServidorImportController::class, 'form'])->name('servidores.import.form');
 Route::post('/servidores/importar', [ServidorImportController::class, 'import'])->name('servidores.import');
+
+Route::get('/admin/formularios/exportar', [AdminFormularioController::class, 'exportarBase'])
+    ->name('admin.form.export');
 });

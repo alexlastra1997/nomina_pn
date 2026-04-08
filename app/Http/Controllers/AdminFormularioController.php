@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Formulario;
 use Illuminate\Http\Request;
+use App\Exports\FormulariosExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class AdminFormularioController extends Controller
 {
@@ -23,5 +26,10 @@ class AdminFormularioController extends Controller
             ->withQueryString();
 
         return view('admin.formularios.index', compact('items', 'q'));
+    }
+
+    public function exportarBase()
+    {
+        return Excel::download(new FormulariosExport, 'formularios.xlsx');
     }
 }
