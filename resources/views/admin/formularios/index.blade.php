@@ -15,8 +15,8 @@
     </div>
     <a href="{{ route('admin.form.export') }}"
         class="bg-green-600 hover:bg-green-700 text-white text-xs px-4 py-2 rounded-lg shadow">
-            Descargar Base
-        </a>
+            Descargar
+    </a>
 
     <div class="relative overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-700 dark:text-gray-200">
